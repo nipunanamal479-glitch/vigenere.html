@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Vigenère Cipher</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=JetBrains+Mono:wght@400;500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#1a1f2e;
+    --ink-2:#232a3d;
+    --parchment:#ede4d3;
+    --parchment-dim:#c9bfa8;
+    --brass:#c9a227;
+    --brass-dim:#8a7222;
+    --rust:#8b3a2f;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    min-height:100vh;
+    background:
+      radial-gradient(circle at 50% -10%, #2a3350 0%, var(--ink) 55%);
+    color:var(--parchment);
+    font-family:'Inter',sans-serif;
+    display:flex;
+    justify-content:center;
+    padding:24px 16px 60px;
+  }
+  .wrap{width:100%;max-width:480px;}
+
+  /* Tabula recta strip - signature element */
+  .strip{
+    display:flex;
+    overflow:hidden;
+    border-radius:10px;
+    margin-bottom:22px;
+    border:1px solid rgba(201,162,39,0.35);
+  }
+  .strip span{
+    flex:1;
+    text-align:center;
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px;
+    padding:6px 0;
+    color:var(--ink);
+    background:var(--brass);
+    animation:shift 6s linear infinite;
+  }
+  @keyframes shift{
+    0%,100%{transform:translateY(0);opacity:1;}
+    50%{transform:translateY(-2px);opacity:0.75;}
+  }
+
+  header{margin-bottom:24px;}
+  h1{
+    font-family:'Playfair Display',serif;
+    font-size:30px;
+    margin:0 0 4px;
+    letter-spacing:0.3px;
+  }
+  header p{
+    margin:0;
+    color:var(--parchment-dim);
+    font-size:13.5px;
+    line-height:1.5;
+  }
+
+  .card{
+    background:var(--ink-2);
+    border:1px solid rgba(201,162,39,0.18);
+    border-radius:16px;
+    padding:20px;
+    box-shadow:0 20px 40px -20px rgba(0,0,0,0.6);
+  }
+
+  .toggle{
+    display:flex;
+    background:var(--ink);
+    border-radius:10px;
+    padding:4px;
+    margin-bottom:18px;
+    border:1px solid rgba(255,255,255,0.06);
+  }
+  .toggle button{
+    flex:1;
+    padding:10px 0;
+    border:none;
+    background:transparent;
+    color:var(--parchment-dim);
+    font-family:'Inter',sans-serif;
+    font-weight:600;
+    font-size:14px;
+    border-radius:8px;
+    cursor:pointer;
+    transition:background .2s,color .2s;
+  }
+  .toggle button.active{
+    background:var(--brass);
+    color:var(--ink);
+  }
+
+  label{
+    display:block;
+    font-size:12px;
+    text-transform:uppercase;
+    letter-spacing:0.08em;
+    color:var(--brass);
+    margin-bottom:6px;
+    font-weight:600;
+  }
+  .field{margin-bottom:16px;}
+  input[type=text], textarea{
+    width:100%;
+    background:var(--ink);
+    border:1px solid rgba(255,255,255,0.1);
+    color:var(--parchment);
+    border-radius:10px;
+    padding:12px 14px;
+    font-family:'JetBrains Mono',monospace;
+    font-size:15px;
+    resize:vertical;
+    outline:none;
+  }
+  input[type=text]:focus, textarea:focus{
+    border-color:var(--brass);
+  }
+  textarea{min-height:100px;}
+
+  .keep-toggle{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    margin:-4px 0 16px;
+    font-size:13px;
+    color:var(--parchment-dim);
+  }
+  .keep-toggle input{width:16px;height:16px;accent-color:var(--brass);}
+
+  .run{
+    width:100%;
+    padding:14px;
+    border:none;
+    border-radius:10px;
+    background:var(--brass);
+    color:var(--ink);
+    font-family:'Inter',sans-serif;
+    font-weight:700;
+    font-size:15px;
+    letter-spacing:0.02em;
+    cursor:pointer;
+    transition:filter .15s, transform .1s;
+  }
+  .run:active{transform:scale(0.98);}
+  .run:hover{filter:brightness(1.08);}
+
+  .output-wrap{margin-top:18px;}
+  .output{
+    background:var(--ink);
+    border:1px dashed rgba(201,162,39,0.4);
+    border-radius:10px;
+    padding:14px;
+    font-family:'JetBrains Mono',monospace;
+    font-size:15px;
+    word-break:break-word;
+    min-height:52px;
+    white-space:pre-wrap;
+  }
+  .output.empty{color:var(--parchment-dim);font-style:italic;font-size:13.5px;}
+
+  .copy{
+    margin-top:10px;
+    background:transparent;
+    border:1px solid rgba(201,162,39,0.4);
+    color:var(--brass);
+    padding:8px 14px;
+    border-radius:8px;
+    font-size:13px;
+    font-weight:600;
+    cursor:pointer;
+  }
+  .copy:active{transform:scale(0.97);}
+
+  .error{
+    color:var(--rust);
+    font-size:13px;
+    margin-top:8px;
+    min-height:16px;
+  }
+
+  footer{
+    text-align:center;
+    margin-top:22px;
+    color:var(--parchment-dim);
+    font-size:12px;
+    line-height:1.6;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="strip" id="strip"></div>
+
+  <header>
+    <h1>Vigenère Cipher</h1>
+    <p>Key එකකින් text encrypt / decrypt කරන්න. A–Z / a–z අකුරු විතරයි cipher කරන්නේ.</p>
+  </header>
+
+  <div class="card">
+    <div class="toggle">
+      <button class="active" id="btn-enc">Encode</button>
+      <button id="btn-dec">Decode</button>
+    </div>
+
+    <div class="field">
+      <label for="key">Key</label>
+      <input type="text" id="key" placeholder="උදා: LEMON" autocomplete="off">
+    </div>
+
+    <div class="field">
+      <label for="msg">Text</label>
+      <textarea id="msg" placeholder="මෙතන message එක type කරන්න..."></textarea>
+    </div>
+
+    <div class="keep-toggle">
+      <input type="checkbox" id="keep" checked>
+      <label for="keep" style="margin:0;text-transform:none;font-weight:400;color:inherit;">Spaces / numbers / symbols එහෙමම තියන්න</label>
+    </div>
+
+    <button class="run" id="run">Run Cipher</button>
+    <div class="error" id="error"></div>
+
+    <div class="output-wrap">
+      <label>Result</label>
+      <div class="output empty" id="output">Result එක මෙතන පෙන්නනවා...</div>
+      <button class="copy" id="copy">Copy Result</button>
+    </div>
+  </div>
+
+  <footer>
+    Key එකේ ඇති අකුරු අනුව A=0 shift, B=1 shift... ලෙස encode වෙනවා. Decode කරන්න original encode කරපු key එකම දාන්න.
+  </footer>
+</div>
+
+<script>
+  // signature tabula-recta strip
+  const stripEl = document.getElementById('strip');
+  const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+  for(let i=0;i<13;i++){
+    const s = document.createElement('span');
+    s.textContent = letters[i*2];
+    s.style.animationDelay = (i*0.15)+'s';
+    stripEl.appendChild(s);
+  }
+
+  const btnEnc = document.getElementById('btn-enc');
+  const btnDec = document.getElementById('btn-dec');
+  const keyInput = document.getElementById('key');
+  const msgInput = document.getElementById('msg');
+  const keepBox = document.getElementById('keep');
+  const runBtn = document.getElementById('run');
+  const outputEl = document.getElementById('output');
+  const errorEl = document.getElementById('error');
+  const copyBtn = document.getElementById('copy');
+
+  let mode = 'encode';
+
+  btnEnc.addEventListener('click', () => {
+    mode = 'encode';
+    btnEnc.classList.add('active');
+    btnDec.classList.remove('active');
+  });
+  btnDec.addEventListener('click', () => {
+    mode = 'decode';
+    btnDec.classList.add('active');
+    btnEnc.classList.remove('active');
+  });
+
+  function vigenere(text, key, decode, keepOthers){
+    const cleanKey = key.replace(/[^a-zA-Z]/g,'');
+    if(cleanKey.length === 0) return null;
+    const keyUpper = cleanKey.toUpperCase();
+    let result = '';
+    let ki = 0;
+
+    for(const ch of text){
+      const isUpper = ch >= 'A' && ch <= 'Z';
+      const isLower = ch >= 'a' && ch <= 'z';
+
+      if(isUpper || isLower){
+        const base = isUpper ? 65 : 97;
+        const shift = keyUpper.charCodeAt(ki % keyUpper.length) - 65;
+        const code = ch.charCodeAt(0) - base;
+        const newCode = decode
+          ? (code - shift + 26) % 26
+          : (code + shift) % 26;
+        result += String.fromCharCode(newCode + base);
+        ki++;
+      } else {
+        if(keepOthers) result += ch;
+      }
+    }
+    return result;
+  }
+
+  runBtn.addEventListener('click', () => {
+    errorEl.textContent = '';
+    const key = keyInput.value.trim();
+    const msg = msgInput.value;
+
+    if(!key.replace(/[^a-zA-Z]/g,'')){
+      errorEl.textContent = 'Key එකේ අවම වශයෙන් එක අකුරක්වත් තියෙන්න ඕන (A-Z).';
+      outputEl.textContent = 'Result එක මෙතන පෙන්නනවා...';
+      outputEl.classList.add('empty');
+      return;
+    }
+    if(!msg){
+      errorEl.textContent = 'Cipher කරන්න text එකක් type කරන්න.';
+      outputEl.textContent = 'Result එක මෙතන පෙන්නනවා...';
+      outputEl.classList.add('empty');
+      return;
+    }
+
+    const result = vigenere(msg, key, mode === 'decode', keepBox.checked);
+    outputEl.textContent = result;
+    outputEl.classList.remove('empty');
+  });
+
+  copyBtn.addEventListener('click', () => {
+    const text = outputEl.textContent;
+    if(!text || outputEl.classList.contains('empty')) return;
+    navigator.clipboard.writeText(text).then(() => {
+      copyBtn.textContent = 'Copied ✓';
+      setTimeout(() => copyBtn.textContent = 'Copy Result', 1200);
+    });
+  });
+</script>
+</body>
+</html>
